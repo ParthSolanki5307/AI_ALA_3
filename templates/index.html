@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CricBot</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f7f9fc; margin:0; padding:0; display:flex; justify-content:center; align-items:center; height:100vh; }
+    .chat-wrapper { width: 100%; max-width:720px; background:white; border-radius:12px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); padding:20px; }
+    .header { font-size:20px; font-weight:600; margin-bottom:10px; }
+    #messages { height: 60vh; overflow:auto; border:1px solid #eee; border-radius:8px; padding:10px; background:#fbfdff; }
+    .msg { margin:8px 0; }
+    .user { text-align:right; }
+    .bot { text-align:left; color:#0b5fff; }
+    .input-row { display:flex; margin-top:12px; gap:8px; }
+    input[type="text"] { flex:1; padding:10px 12px; border-radius:8px; border:1px solid #ddd; font-size:16px; }
+    button { padding:10px 14px; border-radius:8px; border:none; background:#0b5fff; color:white; font-weight:600; cursor:pointer; }
+    .note { font-size:13px; color:#666; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <div class="chat-wrapper">
+    <div class="header">CricBot — Ask me anything about Cricket</div>
+    <div id="messages">
+      <div class="msg bot">CricBot: Hi! I'm CricBot. Type a question or 'exit' to end.</div>
+    </div>
+
+    <div class="input-row">
+      <input id="userInput" type="text" placeholder="Type your question... e.g. 'Who is Virat Kohli' " />
+      <button id="sendBtn">Send</button>
+    </div>
+    <div class="note">Tip: Try "best bowler", "what is LBW", "who won 2011 world cup", "how many players in a team".</div>
+  </div>
+
+<script>
+const messages = document.getElementById('messages');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+
+function appendMessage(text, cls) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + cls;
+  d.textContent = text;
+  messages.appendChild(d);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function sendMessage() {
+  const msg = userInput.value.trim();
+  if (!msg) return;
+  appendMessage('You: ' + msg, 'user');
+  userInput.value = '';
+  // call backend
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+    const data = await res.json();
+    appendMessage(data.reply, 'bot');
+    // If server replies that chat closed on exit, you can optionally disable input
+    if (msg.toLowerCase() === 'exit') {
+      appendMessage('CricBot: Session ended — refresh to start again.', 'bot');
+      userInput.disabled = true;
+      sendBtn.disabled = true;
+    }
+  } catch (err) {
+    appendMessage('CricBot: Error connecting to server.', 'bot');
+    console.error(err);
+  }
+}
+
+sendBtn.addEventListener('click', sendMessage);
+userInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendMessage();
+});
+</script>
+</body>
+</html>
